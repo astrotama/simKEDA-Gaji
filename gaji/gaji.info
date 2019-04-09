@@ -1,0 +1,6 @@
+; $Id$
+name = "simKEDA Gaji"
+description = "simKEDA Gaji"
+;dependencies[] = 
+core = 7.x
+package="simKEDA"

@@ -1,0 +1,653 @@
+<?php
+
+function apbd_menu() {
+
+
+	//SKPD 
+	$items['opd'] = array (
+      'title' => 'Daftar OPD',
+	  //'title callback' => 'laporan_title_callback',	  
+      'page callback' => 'opd_main',
+      //'access arguments' => array ('access content'),
+	  //'access arguments' => array ('jurnal pendapatan pusat'),
+	  'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'opd/opd_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );		
+	$items['opd/edit'] = array (
+      'title' => 'OPD',
+	  'description' => 'Laporan user',
+	  'title callback' => 'laporan_title_callback',	  
+      'page callback' => 'opd_edit_main',
+      //'access arguments' => array ('access content'),
+	  'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'opd/opd_edit_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );	
+
+
+	//OPERATOR
+	$items['operators'] = array (
+      'title' => 'Daftar Operator',
+	  'description' => 'Daftar Operator',
+	  //'title callback' => 'opt_title_callback',	  
+      'page callback' => 'apbdop_main',
+      //'access arguments' => array ('access content'),
+	  'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'apbdop/apbdop_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );
+	$items['operator/edit'] = array (
+      'title' => 'Operator',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('apbdop_edit_form'),
+      //'access arguments' => array ('desa penghapusan'),
+	  'access arguments' => array ('access content'),
+      'file' => 'apbdop/apbdop_edit_form.php',
+      'type' => MENU_CALLBACK,
+    );		
+    $items['operator/delete'] = array (
+      'title' => 'Hapus Operator',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('apbdop_delete_form'),
+      //'access arguments' => array ('desa penghapusan'),
+	  'access arguments' => array ('access content'),
+      'file' => 'apbdop/apbdop_delete_form.php',
+      'type' => MENU_CALLBACK,
+    );	
+
+    return $items;
+}
+
+function apbd_fn($num) {
+
+    //return number_format((float)$num, 0, ',', '.');
+	
+	$x = number_format((float)$num, 0, ',', '.');
+	if (substr($x,0,1)=='-' ) $x = '('. substr($x,1) . ')';
+	return $x;
+}
+
+function apbd_fn2($num) {
+    return number_format((float)$num, 2, ',', '.');
+}
+
+function apbd_fn1($num) {
+    return number_format((float)$num, 1, ',', '.');
+}
+
+function createTable($header,$row){
+	$str='<table class="table table-striped">';
+	for($n=0;$n<sizeof($header);$n++){
+		$str.='<th>'.strtoupper($header[$n]['data']).'</th>';
+		
+	}
+	$str.='';/*
+	$str='<table><th><td>a</td>';
+	$str.='<td>b</td></th></table>';
+	
+	$str.='<td>b</td></th></table>';*/
+	for($n=0;$n<sizeof($row);$n++)
+	{
+		$str.='<tr >';
+		for($m=0;$m<sizeof($row[$n]);$m++)
+		{
+			if(isset($row[$n][$m]['data']) &&  $row[$n][$m]['data']!=null && $m!=sizeof($row[$n])-1){
+				$str.='<td align="'.$row[$n][$m]['align'].'">'.$row[$n][$m]['data'].'</td>';
+			}
+			else{
+				$str.='<td>'.$row[$n][$m].'</td>';
+				//drupal_set_message($row[$n][$m]);
+			}
+			  
+		  
+		}
+		$str.='</tr>';
+	}
+	$str.='</table>';
+	return $str;
+}
+
+function createlink($name,$link){
+	return '<a href="'.$link.'">'.$name.'</a>';
+}
+
+function apbd_fd($dt) {
+	if (is_null($dt))
+		return '';
+	else
+		return date('d-m-Y',strtotime($dt));
+}
+
+function apbd_fd_long($dt) {
+	if (is_null($dt))
+		return '';
+	else
+		return t(date('j F Y',strtotime($dt)));
+}
+
+function apbd_terbilang($x){
+	$t = apbd_terbilangx($x);
+	if ($t == '' || $t == ' ')
+		return '# N.i.h.i.l #';
+	else
+		return '# ' . $t . ' Rupiah #';
+}
+
+function apbd_terbilangx($x){
+  $abil = array("", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas");
+  if ($x < 12)
+    return " " . $abil[$x];
+  elseif ($x < 20)
+    return apbd_terbilangx($x - 10) . "belas";
+  elseif ($x < 100)
+    return apbd_terbilangx($x / 10) . " Puluh" . apbd_terbilangx($x % 10);
+  elseif ($x < 200)
+    return " Seratus" . apbd_terbilangx($x - 100);
+  elseif ($x < 1000)
+    return apbd_terbilangx($x / 100) . " Ratus" . apbd_terbilangx($x % 100);
+  elseif ($x < 2000)
+    return " Seribu" . apbd_terbilangx($x - 1000);
+  elseif ($x < 1000000)
+    return apbd_terbilangx($x / 1000) . " Ribu" . apbd_terbilangx($x % 1000);
+  elseif ($x < 1000000000)
+    return apbd_terbilangx($x / 1000000) . " Juta" . apbd_terbilangx($x % 1000000);
+  elseif ($x < 1000000000000)
+    return apbd_terbilangx($x / 1000000000) . " Milyar" . apbd_terbilangx($x % 1000000000);
+}
+
+function apbd_getuseruk() {
+	
+	if (isAdministrator())
+		$x = '81';
+	else {
+	
+		$user =  user_load($GLOBALS['user']->uid);
+
+		$x = '';
+		$query = db_select('apbdop', 'o');
+		$query->fields('o', array('kodeuk'));
+		$query->condition('o.username', $user->name, '=');
+		$results = $query->execute();
+		foreach ($results as $data) {
+			$x = $data->kodeuk;
+		}
+		if ($x=='') $x = '81';
+	}
+	return $x;	
+}
+
+function apbd_get_dbvalue($val){
+	$x = (real) $val;
+	return $x;
+}
+
+function isSuperuser() {
+	$user =  user_load($GLOBALS['user']->uid);
+	if (in_array('superuser', $user->roles))
+		return true;
+	return (false || isAdministrator());	
+}
+
+function isUserSKPD() {
+	$user =  user_load($GLOBALS['user']->uid);
+	if (in_array('skpd', $user->roles))
+		return true;
+	return false;
+}
+
+function isAdministrator() {
+	$user =  user_load($GLOBALS['user']->uid);
+	if (user_access('Administer Nodes', $user))
+		return true;
+	return false;		
+}
+
+function apbd_cron() {
+
+}
+
+function apbd_messagebox($message) {
+  $commands = array();
+  $commands[] = ajax_command_alert($message);
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+ 
+function apbd_format_tanggal_pendek($sp2dtgl) {
+	//drupal_set_message($sp2dtgl);
+	//drupal_set_message(strtotime($sp2dtgl));
+	$arrtgl=explode('-',$sp2dtgl);
+	//$bulanoption=array('Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember');
+	return $arrtgl[2].'-'.$arrtgl[1].'-'.$arrtgl[0];	
+}
+
+function apbd_get_namabulan($bulan) {
+	$x = '';
+	switch ($bulan) {
+		case 1:
+			$x = 'Januari';
+			break;
+		case 2:
+			$x = 'Februari';
+			break;
+		case 3:
+			$x = 'Maret';
+			break;
+		case 4:
+			$x = 'April';
+			break;
+		case 5:
+			$x = 'Mei';
+			break;
+		case 6:
+			$x = 'Juni';
+			break;
+		case 7:
+			$x = 'Juli';
+			break;
+		case 8:
+			$x = 'Agustus';
+			break;
+		case 9:
+			$x = 'September';
+			break;
+		case 10:
+			$x = 'Oktober';
+			break;
+		case 11:
+			$x = 'November';
+			break;
+		case 12:
+			$x = 'Desember';
+			break;
+	}
+
+	return $x;
+	
+} 
+//glyphicon glyphicon-check+
+//<span class="label label-default">
+
+function apbd_icon_plus() {
+	return '<span class="glyphicon glyphicon-chevron-up" style="color:blue"></span>';
+}
+
+function apbd_icon_minus() {
+	return '<span class="glyphicon glyphicon-chevron-down" style="color:red"></span>';
+}
+
+function apbd_icon_valid() {
+	return '<span class="glyphicon glyphicon-ok-sign" style="color:blue"></span>';
+}
+
+function apbd_icon_sudah() {
+	return '<span class="glyphicon glyphicon-ok-circle"</span>';
+}
+
+function apbd_icon_belum() {
+	return '<span class="glyphicon glyphicon-remove-circle" style="color:red"></span>';
+}
+
+function apbd_button_baru($link) {
+	return l('<span class="glyphicon glyphicon-file" aria-hidden="true"></span> Baru', $link , array ('html' => true, 'attributes'=> array ('class'=>'btn btn-primary btn-sm')));
+}
+
+function apbd_button_baru_custom($link, $caption) {
+	return l('<span class="glyphicon glyphicon-file" aria-hidden="true"></span> ' . $caption, $link , array ('html' => true, 'attributes'=> array ('class'=>'btn btn-primary btn-sm')));
+}
+
+function apbd_button_print($link) {
+	return l('<span class="glyphicon glyphicon-print" aria-hidden="true"></span> Cetak', $link , array ('html' => true, 'attributes'=> array ('class'=>'btn btn-primary btn-sm')));
+}
+
+function apbd_button_excel($link) {
+	return l('<span class="glyphicon glyphicon-list" aria-hidden="true"></span> Excel', $link ,array ('html' => true, 'attributes'=> array ('class'=>'btn btn-primary btn-sm')));
+}
+
+function apbd_button_bukubesar($link) {
+	return l('Buku Besar', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-success btn-xs btn-block')));
+}
+
+function apbd_link_print_small($link, $caption) {
+	return l('<span class="glyphicon glyphicon-print" aria-hidden="true"></span> ' . $caption, $link , array ('html' => true));
+}
+
+function apbd_link($link, $caption) {
+	return l($caption, $link , array ('html' => true));
+}
+
+function apbd_button_baru_custom_small($link, $caption) {
+	return l('<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> ' . $caption, $link , array ('html' => true, 'attributes'=> array ('class'=>'btn btn-primary btn-xs')));
+}
+
+function apbd_button_jurnal($link) {
+	return l('Buka', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-success btn-xs btn-block', 'query' => drupal_get_destination())));
+}
+
+function apbd_button_daftar($link) {
+	return l('<span class="glyphicon glyphicon-print" aria-hidden="true"></span> Daftar', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-info btn-xs btn-block', 'query' => drupal_get_destination())));
+}
+
+function apbd_button_rekap($link) {
+	return l('<span class="glyphicon glyphicon-print" aria-hidden="true"></span> Rekap', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-success btn-xs btn-block', 'query' => drupal_get_destination())));
+}
+
+function apbd_button_hapus($link) {
+	return l('Hapus', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-danger btn-xs btn-block')));
+}
+
+function apbd_button_hapus_disabled() {
+	return l('Hapus', '', array ('html' => true, 'attributes'=> array ('class'=>'btn btn-danger btn-xs disabled btn-block')));
+}
+
+function apbd_button_cetak($link) {
+	return l('Cetak', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-info btn-xs btn-block')));
+}
+
+function apbd_button_kegiatan($link) {
+	return l('Kegiatan', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-success btn-xs btn-block')));
+}
+
+function apbd_button_register($link) {
+	return l('Register', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-warning btn-xs btn-block')));;
+}
+function apbd_button_user($link) {
+	return l('Edit Role', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-danger btn-xs btn-block')));;
+}
+function apbd_button_sp2d($link) {
+	return l('SP2D', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-warning btn-xs btn-block')));
+
+}
+function apbd_button_jurnalkan($link) {
+	return l('Baru', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-warning btn-xs btn-block')));
+
+}
+function apbd_button_jurnalitem($link) {
+	return l('Rincian', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-warning btn-xs btn-block')));
+
+}
+
+function apbd_button_analisis($link) {
+	return l('Analisis', $link, array ('html' => true, 'attributes'=> array ('class'=>'btn btn-info btn-xs btn-block')));
+}
+
+function apbd_button_chart($link) {
+	return l('<span class="glyphicon glyphicon-stats" aria-hidden="true"></span> Grafis', $link , array ('html' => true, 'attributes'=> array ('class'=>'btn btn-danger pull-right')));
+}
+function apbd_button_tampilkan() {
+	return t('<span class="glyphicon glyphicon-search" aria-hidden="true"></span>Tampilkan');
+}
+
+function apbd_tahun() {
+	return '2018';
+}
+
+function apbd_perda() {
+	return 'Nomor 73 Tahun 2016 tentang Penjabaran APBD Kabupaten Jepara';
+}
+
+function apbd_getbulan($bulan) {
+	switch($bulan) {
+		case '1':
+			$x = "Januari";    
+			break;
+		case '2':
+			$x = "Februari";    
+			break;
+		case '3':
+			$x = "Maret";    
+			break;
+		case '4':
+			$x = "April";    
+			break;
+		case '5':
+			$x = "Mei";    
+			break;
+		case '6':
+			$x = "Juni";    
+			break;
+		case '7':
+			$x = "Juli";    
+			break;
+		case '8':
+			$x = "Agustus";    
+			break;
+		case '9':
+			$x = "September";    
+			break;
+		case '10':
+			$x = "Oktober";    
+			break;
+		case '11':
+			$x = "Nopember";    
+			break;
+		case '12':
+			$x = "Desember";    
+			break;
+
+		default:
+			//drupal_access_denied();
+			break;
+	}	
+	return $x;
+}
+
+function apbd_bud_jabatan() {
+	if (variable_get('ttd_by_kuasa_bud', '0'))
+		$x = variable_get('kuasa_bud_jabatan', 'BENDAHARA UMUM DAERAH');
+	else
+		$x = variable_get('bud_jabatan', 'BENDAHARA UMUM DAERAH');
+	return $x;
+}	
+
+function apbd_bud_nama() {
+	if (variable_get('ttd_by_kuasa_bud', '0'))
+		$x = variable_get('kuasa_bud_nama', 'SITI NUR JANAH, SE');
+	else
+		$x = variable_get('bud_nama', 'Drs. ANWAR HARYONO, MM');
+	return $x;
+}	
+
+function apbd_bud_nip() {
+	if (variable_get('ttd_by_kuasa_bud', '0'))
+		$x = variable_get('kuasa_bud_nip', '19650903 198603 2 018');
+	else
+		$x = variable_get('bud_nip', '19580318 198503 1 011');
+	return $x;
+}	
+
+function createT($header,$row,$set=null){
+	$str='<table class="table table-striped">';
+	if(sizeof($header)>0)
+		$str.='<thead>';
+	for($n=0;$n<sizeof($header);$n++){
+		$str.='<tr>';
+		for($m=0;$m<sizeof($header[$n]);$m++){
+			if(isset($header[$n][$m]['colspan'])){
+				$colspan=$header[$n][$m]['colspan'];
+			}
+			else{
+				$colspan='';
+			}
+			if(isset($header[$n][$m]['rowspan']) && $header[$n][$m]['rowspan']!=null){
+				$rowspan=$header[$n][$m]['rowspan'];
+			}
+			else{
+				$rowspan='';
+			}
+			
+			$str.='<th  align="center" rowspan="'.$rowspan.'" style="'.$header[$n][$m]['style'].'" width="'.$header[$n][$m]['width'].'">'.strtoupper($header[$n][$m]['data']).'</th>';
+		}
+		$str.='</tr>';
+		
+	}
+	if(sizeof($header)>0)
+		$str.='</thead>';
+	/*
+	$str='<table><th><td>a</td>';
+	$str.='<td>b</td></th></table>';
+
+	$str.='<td>b</td></th></table>';*/
+	for($n=0;$n<sizeof($row);$n++)
+	{
+		$str.='<tr >';
+		for($m=0;$m<sizeof($row[$n]);$m++)
+		{
+			$str.='<td width="'.$row[$n][$m]['width'].'" style="'.$row[$n][$m]['style'].'" align="'.$row[$n][$m]['align'].'">'.$row[$n][$m]['data'].'</td>';
+		}
+		$str.='</tr>';
+	}
+	$str.='</table>';
+	return $str;
+}
+
+function apbd_date_convert_db2form($tanggal) {
+	$arr_tgl = explode("-", $tanggal);	
+	return  mktime(0, 0, 0, $arr_tgl[1], $arr_tgl[2], $arr_tgl[0]);
+}
+
+function apbd_date_convert_form2db($tanggal) {
+	//sprintf("%02d", $num)
+	$hari = sprintf("%02d", $tanggal['day']);
+	$bulan = sprintf("%02d", $tanggal['month']);
+	return  $tanggal['year'] . '-' . $bulan . '-' . $hari;
+}
+
+function apbd_date_create_currdate_form() {
+	return  mktime(0, 0, 0, date('m'), date('d'), apbd_tahun());
+}
+
+function apbd_date_create_dateone_form() {
+	return  mktime(0, 0, 0, date('m'), 1, apbd_tahun());
+}
+
+function dateapi_convert_timestamp_to_datetime($timestamp) {
+
+	$date = new DateTime($timestamp);
+	//date_timezone_set($date, timezone_open(drupal_get_user_timezone()));
+	return date_format($date, 'Y-m-d');
+}
+
+function dateapi_convert_datetime_to_timestamp($datetime) {
+	
+	$date = date_create_from_format('Y-m-d',$datetime,timezone_open(drupal_get_user_timezone()));
+	return date_timestamp_get($date);
+}
+
+function apbd_blank_space() {
+	return '&nbsp;';
+}	
+
+function apbd_is_file_exist_daftar($gajiid, $kodeuk) {
+	
+	//$url = 'http://simkedajepara.web.id/sp2d/espm/E_SPM_' . $dokid . '.PDF';
+	$url = 'http://gaji.simkedajepara.net/files/ledger_' . $gajiid . '/' . $kodeuk . 'D.pdf';
+    $curl = curl_init($url);
+
+    //don't fetch the actual page, you only want to check the connection is ok
+    curl_setopt($curl, CURLOPT_NOBODY, true);
+
+    //do request
+    $result = curl_exec($curl);
+
+    $ret = false;
+
+    //if request did not fail
+    if ($result !== false) {
+        //if request was ok, check response code
+        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);  
+
+        if ($statusCode == 200) {
+            $ret = true;   
+        }
+    }
+
+    curl_close($curl);
+
+    return $ret;
+}
+
+function apbd_is_file_exist_rekap($gajiid, $kodeuk) {
+	
+	//$url = 'http://simkedajepara.web.id/sp2d/espm/E_SPM_' . $dokid . '.PDF';
+	$url = 'http://gaji.simkedajepara.net/files/ledger_' . $gajiid . '/' . $kodeuk . 'R.pdf';
+    $curl = curl_init($url);
+
+    //don't fetch the actual page, you only want to check the connection is ok
+    curl_setopt($curl, CURLOPT_NOBODY, true);
+
+    //do request
+    $result = curl_exec($curl);
+
+    $ret = false;
+
+    //if request did not fail
+    if ($result !== false) {
+        //if request was ok, check response code
+        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);  
+
+        if ($statusCode == 200) {
+            $ret = true;   
+        }
+    }
+
+    curl_close($curl);
+
+    return $ret;
+}
+
+function apbd_is_file_exist($gajiid, $kodeuk) {
+	
+	//$url = 'http://simkedajepara.web.id/sp2d/espm/E_SPM_' . $dokid . '.PDF';
+	$url = 'http://gaji.simkedajepara.net/files/ledger_' . $gajiid . '/' . $kodeuk . 'D.pdf';
+    $curl = curl_init($url);
+
+    //don't fetch the actual page, you only want to check the connection is ok
+    curl_setopt($curl, CURLOPT_NOBODY, true);
+
+    //do request
+    $result = curl_exec($curl);
+
+    $ret = 0;
+
+    //if request did not fail
+    if ($result !== false) {
+        //if request was ok, check response code
+        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);  
+
+        if ($statusCode == 200) {
+            $ret++;   
+        }
+    }
+
+    curl_close($curl);
+
+
+	$url = 'http://gaji.simkedajepara.net/files/ledger_' . $gajiid . '/' . $kodeuk . 'R.pdf';
+    $curl = curl_init($url);
+
+    //don't fetch the actual page, you only want to check the connection is ok
+    curl_setopt($curl, CURLOPT_NOBODY, true);
+
+    //do request
+    $result = curl_exec($curl);
+
+    $ret = 0;
+
+    //if request did not fail
+    if ($result !== false) {
+        //if request was ok, check response code
+        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);  
+
+        if ($statusCode == 200) {
+            $ret++;   
+        }
+    }
+
+    curl_close($curl);
+    return $ret;
+}
+

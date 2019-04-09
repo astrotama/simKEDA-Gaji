@@ -1,0 +1,79 @@
+<?php
+
+function gaji_permission() {
+  return array(
+    'gaji edit permission' => array(
+      'title' => t('Gaji Edit Permission'),
+      'description' => t('Gaji Edit Permission'),
+    ),
+    'gaji view permission' => array(
+      'title' => t('Gaji View Permission'),
+      'description' => t('Gaji View Permission'),
+    ),
+  );
+}
+
+function gaji_menu() {
+
+
+	//SKPD 
+	$items['gaji'] = array (
+      'title' => 'Arsip Ledger Gaji',
+	  //'title callback' => 'laporan_title_callback',	  
+      'page callback' => 'gaji_main',
+      //'access arguments' => array ('access content'),
+	  'access arguments' => array ('gaji edit permission'),
+	  //'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'gaji_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );		
+	$items['gaji/edit'] = array (
+      'title' => 'Ledger Gaji',
+	  'description' => 'Laporan user',
+	  'title callback' => 'laporan_title_callback',	  
+      'page callback' => 'gaji_edit_main',
+      'access arguments' => array ('gaji edit permission'),
+	  //'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'gaji_edit_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );	
+	$items['gaji/cek'] = array (
+      'title' => 'Ledger Gaji',
+	  'description' => 'Laporan user',
+	  'title callback' => 'laporan_title_callback',	  
+      'page callback' => 'gaji_cek_main',
+      'access arguments' => array ('gaji edit permission'),
+	  //'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'gaji_cek_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );	
+
+	$items['gajiview'] = array (
+      'title' => 'Arsip Ledger Gaji',
+	  //'title callback' => 'laporan_title_callback',	  
+      'page callback' => 'gaji_view_main',
+      //'access arguments' => array ('access content'),
+	  'access arguments' => array ('gaji view permission'),
+	  //'access callback' => 'user_is_logged_in',
+      'weight' => 11,
+      'file' => 'gaji_view_main.php',
+      'type' => MENU_NORMAL_ITEM,
+    );		
+
+    $items['gaji/delete'] = array (
+      'title' => 'Hapus Ledger Gaji',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('gaji_delete_form'),
+      //'access arguments' => array ('desa penghapusan'),
+	  'access arguments' => array ('gaji edit permission'),
+      'file' => 'gaji_delete_form.php',
+      'type' => MENU_CALLBACK,
+    );	
+	
+
+
+    return $items;
+}
